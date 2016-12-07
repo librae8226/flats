@@ -1,0 +1,12 @@
+astropy==1.2.1
+bokeh==0.12.3
+click==6.6
+dateutils==0.6.6
+Flask==0.11.1
+lxml==3.6.4
+numpy==1.11.2
+pandas==0.19.1
+pathtools==0.1.2
+requests==2.12.3
+scipy==0.16.1
+tushare==0.6.2

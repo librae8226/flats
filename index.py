@@ -1,5 +1,8 @@
 from flask import Flask, request, url_for, render_template
 from subprocess import call
+import sys
+sys.path.append("lib");
+import worker
 
 app = Flask(__name__)
 
@@ -18,6 +21,16 @@ def fn(fn=None):
     """
     app.logger.debug('fn name: %s, method is %s' % (fn, request.method))
     return 'fn name: %s, method is %s' % (fn, request.method)
+
+@app.route('/api/get_stock_basics', methods=['GET'])
+@app.route('/api/get_stock_basics/', methods=['GET'])
+@app.route('/api/get_stock_basics/<code>', methods=['GET'])
+def get_stock_basics(code='600000'):
+    """ get particular stock basics according to the code
+    args: stock code
+    returns: a json object string, the basics of the particular stock
+    """
+    return str(json.loads(worker.get_stock_basics())[code])
 
 @app.errorhandler(404)
 def page_not_found(error):
