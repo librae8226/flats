@@ -1,7 +1,7 @@
 import click
 import sys
 import json
-sys.path.append("lib");
+sys.path.append("libs");
 import worker
 
 class Config(object):

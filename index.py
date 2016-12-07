@@ -1,7 +1,7 @@
 from flask import Flask, request, url_for, render_template
 from subprocess import call
 import sys
-sys.path.append("lib");
+sys.path.append("libs");
 import worker
 
 app = Flask(__name__)
