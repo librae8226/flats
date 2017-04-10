@@ -88,10 +88,10 @@ def get_report(opt, mode, year, quarter):
             y, q = add_quarter(y, q)
 	print fqs
 
-        threads = []
-
         print "[%s] start" % datetime.now().strftime("%H:%M:%S.%f")
 
+        ''' multithreading, will cause data loss
+        threads = []
         for fq in fqs:
             th = threading.Thread(target=get_report_thread, args=(fq,))
             th.start()
@@ -99,6 +99,10 @@ def get_report(opt, mode, year, quarter):
 
         for th in threads:
             th.join()
+        '''
+
+        for fq in fqs:
+            get_report_thread(fq)
 
         print "[%s] finish" % datetime.now().strftime("%H:%M:%S.%f")
     else:
