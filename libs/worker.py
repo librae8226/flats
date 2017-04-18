@@ -23,8 +23,9 @@ def get_stock_basics():
     '''
 
     filename = PREFIX + '/' + 'basics.csv'
-    df = ts.get_stock_basics().sort_values(by='code')
-    return df.to_csv(filename, encoding='UTF-8');
+    df = ts.get_stock_basics()
+    df.sort_index(inplace=True)
+    return df.to_csv(filename, encoding='UTF-8')
 
 def save_to_file(filename, df):
     ''' save df content to file

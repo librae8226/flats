@@ -33,18 +33,15 @@ def cli(opt, debug, path):
     opt.path = path
 
 @cli.command()
-@click.option('--mode', default = 'm', help = 'd/w/m/y: daily, weekly, monthly or yearly')
-@click.argument('code', required = True)
 @pass_config
-def get_basics(opt, mode, code):
+def get_basics(opt):
     ''' This command get stock basics\n
     e.g.\n
     '''
     if opt.debug:
         click.echo('opt path: %s' %opt.path)
         click.echo('out: %s' %out)
-    print json.loads(worker.get_stock_basics())[code]
-    return None
+    return worker.get_stock_basics()
 
 def add_quarter(year, quarter):
     if (quarter == 4):
