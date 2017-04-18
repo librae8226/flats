@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import click
 import sys
 import json
@@ -7,6 +9,7 @@ import threading
 import time
 from random import random
 sys.path.append("libs");
+from log import log
 import worker
 
 class Config(object):
@@ -111,6 +114,38 @@ def get_report(opt, mode, year, quarter):
         worker.get_report_data(year, quarter)
     return None
 
+@cli.command()
+@click.option('--mode', default = 'pe', help = 'pe|ebit|ebitda')
+@click.option('--years', default = 5, help = 'number of years')
+@click.argument('security', required = True)
+@pass_config
+def eval(opt, mode, years, security):
+    ''' Evaluate security price range according to different key indicators\n
+    mode:\n
+        pe: make use of Gaussian Distribution of P/E history\n
+        ebit: make use of EV/EBIT\n
+        ebitda: make use of EV/EBITDA\n
+    years:\n
+        number of years we trace back, to take the hitory data into account\n
+    security:\n
+        one or more security code, separated by ','\n
+    e.g.\n
+    evaluate 600690 according to pe history in 5 years\n
+    # flats eval --mode pe --years 5 600690,600422,002415\n
+    '''
+    log.info('mode: %s', mode)
+    log.info('years: %d', years)
+    s_arr = security.split(',')
+    log.info('security(%d): %s', len(s_arr), security)
+    for s in s_arr:
+        log.debug('eval %s(%s)', s, worker.get_name_by_code(s))
+        l, c, r = worker.get_est_price(mode, years, s)
+        log.debug('dynamic est: %.2f~%.2f~%.2f', l, c, r)
+
+    return None
+
 # Below lines are used to run this script directly in python env:
 if __name__ == '__main__':
+    reload(sys)
+    sys.setdefaultencoding("utf-8")
     cli()

@@ -2,8 +2,18 @@ import os
 import tushare as ts
 import pandas as pd
 from datetime import datetime
+from log import log
 
 PREFIX = 'data'
+
+def get_name_by_code(code):
+    q_str = 'code==' + '\"' + code + '\"';
+    # FIXME should use the latest report file
+    df = pd.read_csv('data/2015q4.csv', dtype={'code': object}).sort_values(by='code').drop_duplicates()
+    return df.query(q_str).name.values[0]
+
+def get_est_price(mode, years, code):
+    return 1.0, 2.1, 3.2
 
 def get_stock_basics():
     ''' invoke tushare get_stock_basics() with csv output
