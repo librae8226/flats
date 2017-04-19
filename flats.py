@@ -127,7 +127,7 @@ def eval(opt, mode, years, security):
     security:\n
         one or more security code, separated by ','\n
     e.g.\n
-    evaluate 600690 according to pe history in 5 years\n
+    evaluate 600690,600422,002415 according to pe history in 5 years\n
     # flats eval --mode pe --years 5 600690,600422,002415\n
     '''
     log.info('mode: %s', mode)

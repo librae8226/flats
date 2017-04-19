@@ -2,7 +2,7 @@ import logging
 
 # create logger
 log = logging.getLogger('flats')
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
 # create console handler and set level to debug
 ch = logging.StreamHandler()
