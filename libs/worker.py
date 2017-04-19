@@ -2,8 +2,10 @@ import os
 import tushare as ts
 import pandas as pd
 from datetime import datetime
+from datetime import timedelta
 from log import log
 from scipy.stats import norm
+import numpy
 
 PREFIX = 'data'
 
@@ -14,8 +16,7 @@ def __estimation_formula_bg_dynamic(growth, eps, pe):
     return (2*growth+pe)*eps
 
 def __pd_read_basics():
-    ''' pd.read_csv, for report
-    args: q_stat(e.g. '2015q4.profit' or '2016q4')
+    ''' pd.read_csv, for basics
     '''
     return pd.read_csv(PREFIX+'/'+'basics.csv', dtype={'code': object}).drop_duplicates()
 
@@ -25,6 +26,11 @@ def __pd_read_report(q_stat):
     '''
     return pd.read_csv(PREFIX+'/'+q_stat+'.csv', dtype={'code': object}).sort_values(by='code').drop_duplicates()
 
+def __pd_read_today_all():
+    ''' pd.read_csv, for today
+    '''
+    return pd.read_csv(PREFIX+'/'+'today_all.csv', dtype={'code': object}).drop_duplicates()
+
 def __quarter_to_date(quarter):
     y = quarter.split('q')[0]
     q = quarter.split('q')[1]
@@ -33,7 +39,7 @@ def __quarter_to_date(quarter):
     start = str(int(y)-1) + tail[int(q)]
     return start, end
 
-def __get_pe(code, quarter):
+def __get_pe_and_eps(code, quarter):
     ''' get pe of specific quarter
     args: code, quarter(e.g. 2015q3)
     '''
@@ -41,62 +47,125 @@ def __get_pe(code, quarter):
     np = 0
     y = quarter.split('q')[0]
     q = quarter.split('q')[1]
-    q_str = 'code==' + '\"' + code + '\"';
+    q_str = 'code==' + '\"' + code + '\"'
 
     b = __pd_read_basics()
     totals = b.query(q_str).totals.values[0]
     log.debug('totals: %.2f', totals)
-    r[quarter] = __pd_read_report(quarter);
+    r[quarter] = __pd_read_report(quarter)
 
     if (q == '4'):
         np = r[quarter].query(q_str).net_profits.values[0]
     else:
 	last_q4 = str(int(y)-1)+'q4'
 	last_q = str(int(y)-1)+'q'+q
-        r[last_q4] = __pd_read_report(last_q4);
-        r[last_q] = __pd_read_report(last_q);
+        r[last_q4] = __pd_read_report(last_q4)
+        r[last_q] = __pd_read_report(last_q)
         np = r[last_q4].query(q_str).net_profits.values[0] - r[last_q].query(q_str).net_profits.values[0] + r[quarter].query(q_str).net_profits.values[0]
 
     eps = np/totals/10000.0
     s, e = __quarter_to_date(quarter)
     k = ts.get_k_data(code, ktype='M', start=s, end=e)
     pps = k.loc[k.last_valid_index()].close
-    log.debug('%s~%s, pps: %.2f', s, e, pps)
+    log.debug('%s, price: %.2f', e, pps)
     log.debug('eps: %.2f', eps)
     pe = round(pps/eps, 2)
     log.debug('pe: %.2f', pe)
 
-    return pe
+    return pe, eps
 
-def __get_est_price_mode_pe(years, code):
+def __get_growth(code):
+    g = []
+    qs = [4, 3, 2, 1]
+    for y in range(datetime.now().year - 3, datetime.now().year + 1):
+        for q in qs:
+	    quarter = str(y)+'q'+str(q)
+	    if (os.path.exists(PREFIX+'/'+quarter+'.growth.csv')):
+		rg = __pd_read_report(quarter+'.growth')
+		q_str = 'code==' + '\"' + code + '\"'
+		if (len(rg.query(q_str)) > 0):
+		    g.append(round(rg.query(q_str).nprg.values[0], 2))
+		    log.debug('growth@%s: %.2f%%', quarter, rg.query(q_str).nprg.values[0])
+		    break
+    growth = round(numpy.mean(g)/100.0, 2)
+    log.info('growth: %.2f', growth)
+    return growth
+
+def __get_eps(code):
+    ''' Deprecated! This eps is not a full fiscal year data!
+    '''
+    b = __pd_read_basics()
+    q_str = 'code==' + '\"' + code + '\"'
+    eps = b.query(q_str).esp.values[0]
+    log.info('eps: %.2f', eps)
+    return eps
+
+def __get_k_data_of_last_trade_day(code):
+    d = datetime.now()
+    k = None
+    while True:
+	k = ts.get_k_data(code, ktype='M', start=d.strftime("%Y-%m-%d"), end=d.strftime("%Y-%m-%d"))
+        if (len(k) > 0):
+            break
+        else:
+            d = d + timedelta(days = -1)
+    return k, d
+
+def __get_est_price_mode_pe(realtime, code, years):
+
+    q_str = 'code==' + '\"' + code + '\"'
+
     pe_obj = {}
+    eps = 0
     for y in range(datetime.now().year - years, datetime.now().year + 1):
         for q in range(1, 5):
 	    quarter = str(y)+'q'+str(q)
 	    if (os.path.exists(PREFIX+'/'+quarter+'.csv')):
-		r = __pd_read_report(quarter);
-		q_str = 'code==' + '\"' + code + '\"';
+		r = __pd_read_report(quarter)
 		if (len(r.query(q_str)) > 0):
-		    pe_obj[quarter] = __get_pe(code, quarter)
-		    log.info('%s: %.2f', quarter, pe_obj[quarter])
+		    # save all pe history and latest eps
+		    pe_obj[quarter], eps = __get_pe_and_eps(code, quarter)
+		    log.debug('%s: %.2f', quarter, pe_obj[quarter])
     #sorted(pe_obj)
     #log.debug(pe_obj)
     arr = pe_obj.values()
     mu, std = norm.fit(arr)
-    log.info('%.2f~%.2f~%.2f', mu - std, mu, mu + std)
-    return 1.0, 2.1, 3.2
+
+    if (realtime):
+	d = datetime.now()
+	today = __pd_read_today_all()
+	close = round(today.query(q_str).trade.values[0], 2)
+    else:
+	k, d = __get_k_data_of_last_trade_day(code)
+	close = round(k.close.values[0], 2)
+    log.info('%s price: %.2f @ pe %.2f', d.strftime("%Y-%m-%d"), close, close/eps)
+    log.info('mu, std: %.2f, %.2f', mu, std)
+
+    growth = __get_growth(code)
+
+    left = __estimation_formula_bg_dynamic(growth, eps, mu - std)
+    centrum = __estimation_formula_bg_dynamic(growth, eps, mu)
+    right = __estimation_formula_bg_dynamic(growth, eps, mu + std)
+    value = __estimation_formula_bg_dynamic(growth, eps, 8.5)
+
+    log.info('est dynamic: %.2f~%.2f~%.2f', left, centrum, right)
+    log.info('est value: %.2f', value)
+    log.info('range from left: %.2f%%', (close-left)/left*100.0)
+    log.info('position: %.2f%%', (close-left)/(right-left)*100.0)
+
+    return left, centrum, right, value
 
 def get_name_by_code(code):
-    q_str = 'code==' + '\"' + code + '\"';
+    q_str = 'code==' + '\"' + code + '\"'
     # FIXME should use the latest report file
     df = pd.read_csv('data/2015q4.csv', dtype={'code': object}).sort_values(by='code').drop_duplicates()
     return df.query(q_str).name.values[0]
 
-def get_est_price(mode, years, code):
+def get_est_price(realtime, mode, years, code):
     ''' return left, centrum, right price, to form a range
     '''
     if (mode == 'pe'):
-	return __get_est_price_mode_pe(years, code)
+	return __get_est_price_mode_pe(realtime, code, years)
     else:
 	return 0, 0, 0
 
@@ -104,7 +173,7 @@ def get_stock_basics():
     ''' invoke tushare get_stock_basics() with csv output
     args:
     returns: csv format data containing the whole martket information
-    json fomat, df.to_json('basics.json', orient='index');
+    json fomat, df.to_json('basics.json', orient='index')
     '''
 
     filename = PREFIX + '/' + 'basics.csv'
@@ -131,7 +200,7 @@ def get_report_data(year, quarter):
            call API -> append to file -> drop duplicates
     args: year, quarter
     returns: csv format data containing the whole martket report in specific year, quarter
-    json fomat, df.to_json(year+'q'+quarter+'.json', orient='index');
+    json fomat, df.to_json(year+'q'+quarter+'.json', orient='index')
     '''
 
     # profit
@@ -174,4 +243,10 @@ def get_report_data(year, quarter):
     filename = PREFIX + '/' + year + 'q' + quarter + '.csv'
     df = ts.get_report_data(int(year), int(quarter)).sort_values(by='code').drop_duplicates()
     print "\n"
+    return save_to_file(filename, df)
+
+def get_today_all():
+    print "[%s] get_today_all" %(datetime.now().strftime("%H:%M:%S.%f"))
+    df = ts.get_today_all()
+    filename = PREFIX + '/' + 'today_all.csv'
     return save_to_file(filename, df)

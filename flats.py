@@ -10,6 +10,7 @@ import time
 from random import random
 sys.path.append("libs");
 from log import log
+import logging
 import worker
 
 class Config(object):
@@ -28,6 +29,10 @@ def cli(opt, debug, path):
     e.g.\n
     '''
     opt.debug = debug
+    if (debug):
+	log.setLevel(logging.DEBUG)
+    else:
+	log.setLevel(logging.INFO)
     if path is None:
         path = '.'
     opt.path = path
@@ -112,11 +117,12 @@ def get_report(opt, mode, year, quarter):
     return None
 
 @cli.command()
+@click.option('--realtime', is_flag = True)
 @click.option('--mode', default = 'pe', help = 'pe|ebit|ebitda')
 @click.option('--years', default = 5, help = 'number of years')
 @click.argument('security', required = True)
 @pass_config
-def eval(opt, mode, years, security):
+def eval(opt, realtime, mode, years, security):
     ''' Evaluate security price range according to different key indicators\n
     mode:\n
         pe: make use of Gaussian Distribution of P/E history\n
@@ -129,15 +135,23 @@ def eval(opt, mode, years, security):
     e.g.\n
     evaluate 600690,600422,002415 according to pe history in 5 years\n
     # flats eval --mode pe --years 5 600690,600422,002415\n
+    # OR, with debug and realtime set True\n
+    # flats --debug eval --realtime --mode pe --years 5 600422,600690,002415\n
     '''
+
+    if (realtime):
+        worker.get_today_all()
+
+    worker.get_stock_basics()
     log.info('mode: %s', mode)
     log.info('years: %d', years)
+
     s_arr = security.split(',')
     log.info('security(%d): %s', len(s_arr), security)
     for s in s_arr:
-        log.debug('eval %s(%s)', s, worker.get_name_by_code(s))
-        l, c, r = worker.get_est_price(mode, years, s)
-        log.debug('dynamic est: %.2f~%.2f~%.2f', l, c, r)
+        log.info('-------- %s(%s) --------', s, worker.get_name_by_code(s))
+        l, c, r, v = worker.get_est_price(realtime, mode, years, s)
+        log.info('----------------------------------')
 
     return None
 
