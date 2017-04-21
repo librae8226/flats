@@ -6,6 +6,7 @@ from datetime import timedelta
 from log import log
 from scipy.stats import norm
 import numpy
+import math
 
 PREFIX = 'data'
 
@@ -76,6 +77,7 @@ def __get_pe_and_eps(code, quarter):
     k = ts.get_k_data(code, ktype='M', start=s, end=e)
     pps = k.loc[k.last_valid_index()].close
     log.debug('%s, price: %.2f', e, pps)
+    log.debug('np: %.2f', np)
     log.debug('eps: %.2f', eps)
     pe = round(pps/eps, 2)
     log.debug('pe: %.2f', pe)
@@ -92,8 +94,11 @@ def __get_growth(code, years):
 		rg = __pd_read_report(quarter+'.growth')
 		q_str = 'code==' + '\"' + code + '\"'
 		if (len(rg.query(q_str)) > 0):
-		    g.append(round(rg.query(q_str).nprg.values[0], 2))
-		    log.debug('growth@%s: %.2f%%', quarter, rg.query(q_str).nprg.values[0])
+                    tmp_g = round(rg.query(q_str).nprg.values[0], 2)
+                    if (math.isnan(tmp_g)):
+                        tmp_g = 0
+		    g.append(tmp_g)
+		    log.debug('growth@%s: %.2f%%', quarter, tmp_g)
 		    break
     growth = round(numpy.mean(g)/100.0, 2)
     log.info('growth: %.2f', growth)
@@ -136,7 +141,7 @@ def __get_est_price_mode_pe(realtime, code, years):
                     if (isinstance(tmp_pe, float) & isinstance(tmp_eps, float)):
                         pe_obj[quarter] = tmp_pe
                         eps = tmp_eps
-                        log.debug('%s: %.2f, eps: %.2f', quarter, pe_obj[quarter], eps)
+                        log.debug('%s pe: %.2f, eps: %.2f', quarter, pe_obj[quarter], eps)
                     else:
                         log.warn('skip %s', quarter)
                         continue
