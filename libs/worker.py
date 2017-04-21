@@ -55,13 +55,21 @@ def __get_pe_and_eps(code, quarter):
     r[quarter] = __pd_read_report(quarter)
 
     if (q == '4'):
-        np = r[quarter].query(q_str).net_profits.values[0]
+        if (len(r[quarter].query(q_str)) > 0):
+            np = r[quarter].query(q_str).net_profits.values[0]
+        else:
+            log.warn('no entry in %s', quarter)
+            return False, False
     else:
 	last_q4 = str(int(y)-1)+'q4'
 	last_q = str(int(y)-1)+'q'+q
         r[last_q4] = __pd_read_report(last_q4)
         r[last_q] = __pd_read_report(last_q)
-        np = r[last_q4].query(q_str).net_profits.values[0] - r[last_q].query(q_str).net_profits.values[0] + r[quarter].query(q_str).net_profits.values[0]
+        if ((len(r[quarter].query(q_str)) > 0) & (len(r[last_q4].query(q_str)) > 0) & (len(r[last_q].query(q_str)) > 0)):
+            np = r[last_q4].query(q_str).net_profits.values[0] - r[last_q].query(q_str).net_profits.values[0] + r[quarter].query(q_str).net_profits.values[0]
+        else:
+            log.warn('no entry in %s', quarter)
+            return False, False
 
     eps = np/totals/10000.0
     s, e = __quarter_to_date(quarter)
@@ -74,10 +82,10 @@ def __get_pe_and_eps(code, quarter):
 
     return pe, eps
 
-def __get_growth(code):
+def __get_growth(code, years):
     g = []
     qs = [4, 3, 2, 1]
-    for y in range(datetime.now().year - 3, datetime.now().year + 1):
+    for y in range(datetime.now().year - years, datetime.now().year + 1):
         for q in qs:
 	    quarter = str(y)+'q'+str(q)
 	    if (os.path.exists(PREFIX+'/'+quarter+'.growth.csv')):
@@ -124,8 +132,14 @@ def __get_est_price_mode_pe(realtime, code, years):
 		r = __pd_read_report(quarter)
 		if (len(r.query(q_str)) > 0):
 		    # save all pe history and latest eps
-		    pe_obj[quarter], eps = __get_pe_and_eps(code, quarter)
-		    log.debug('%s: %.2f', quarter, pe_obj[quarter])
+                    tmp_pe, tmp_eps = __get_pe_and_eps(code, quarter)
+                    if (isinstance(tmp_pe, float) & isinstance(tmp_eps, float)):
+                        pe_obj[quarter] = tmp_pe
+                        eps = tmp_eps
+                        log.debug('%s: %.2f, eps: %.2f', quarter, pe_obj[quarter], eps)
+                    else:
+                        log.warn('skip %s', quarter)
+                        continue
     #sorted(pe_obj)
     #log.debug(pe_obj)
     arr = pe_obj.values()
@@ -141,7 +155,7 @@ def __get_est_price_mode_pe(realtime, code, years):
     log.info('%s price: %.2f @ pe %.2f', d.strftime("%Y-%m-%d"), close, close/eps)
     log.info('mu, std: %.2f, %.2f', mu, std)
 
-    growth = __get_growth(code)
+    growth = __get_growth(code, years)
 
     left = __estimation_formula_bg_dynamic(growth, eps, mu - std)
     centrum = __estimation_formula_bg_dynamic(growth, eps, mu)
@@ -159,7 +173,11 @@ def get_name_by_code(code):
     q_str = 'code==' + '\"' + code + '\"'
     # FIXME should use the latest report file
     df = pd.read_csv('data/2015q4.csv', dtype={'code': object}).sort_values(by='code').drop_duplicates()
-    return df.query(q_str).name.values[0]
+    df_code = df.query(q_str)
+    if (len(df_code) > 0):
+        return df_code.name.values[0]
+    else:
+        return None
 
 def get_est_price(realtime, mode, years, code):
     ''' return left, centrum, right price, to form a range

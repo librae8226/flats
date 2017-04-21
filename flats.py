@@ -149,9 +149,13 @@ def eval(opt, realtime, mode, years, security):
     s_arr = security.split(',')
     log.info('security(%d): %s', len(s_arr), security)
     for s in s_arr:
-        log.info('-------- %s(%s) --------', s, worker.get_name_by_code(s))
-        l, c, r, v = worker.get_est_price(realtime, mode, years, s)
-        log.info('----------------------------------')
+        name = worker.get_name_by_code(s)
+        if (name):
+            log.info('-------- %s(%s) --------', s, name)
+            l, c, r, v = worker.get_est_price(realtime, mode, years, s)
+            log.info('----------------------------------')
+        else:
+            log.info('no history entry for %s', security)
 
     return None
 
