@@ -75,6 +75,9 @@ def __get_pe_and_eps(code, quarter):
     eps = np/totals/10000.0
     s, e = __quarter_to_date(quarter)
     k = ts.get_k_data(code, ktype='M', start=s, end=e)
+    if (len(k) == 0):
+        log.warn('no k data entry in %s', quarter)
+        return False, False
     pps = k.loc[k.last_valid_index()].close
     log.debug('%s, price: %.2f', e, pps)
     log.debug('np: %.2f', np)
