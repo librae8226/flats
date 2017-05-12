@@ -104,7 +104,7 @@ def __get_growth(code, years):
 		    log.debug('growth@%s: %.2f%%', quarter, tmp_g)
 		    break
     growth = round(numpy.mean(g)/100.0, 2)
-    log.info('growth: %.2f', growth)
+    log.info('growth: %.2f %d~%d %s', growth, datetime.now().year - years, datetime.now().year, str(g))
     return growth
 
 def __get_eps(code):
