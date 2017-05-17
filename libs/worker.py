@@ -16,6 +16,12 @@ def __estimation_formula_bg_dynamic(growth, eps, pe):
     '''
     return (2*growth+pe)*eps
 
+def __estimation_formula_pb(bvps, pb):
+    ''' normal pb (based on Gaussian Distribution)
+	original: bvps*pb
+    '''
+    return bvps*pb
+
 def __pd_read_basics():
     ''' pd.read_csv, for basics
     '''
@@ -177,6 +183,85 @@ def __get_est_price_mode_pe(realtime, code, years):
 
     return left, centrum, right, value
 
+def __get_pb_and_bvps(code, quarter):
+    ''' get pb of spbcific quarter
+    args: code, quarter(e.g. 2015q3)
+    '''
+    r = {}
+    bvps = 0
+    y = quarter.split('q')[0]
+    q = quarter.split('q')[1]
+    q_str = 'code==' + '\"' + code + '\"'
+
+    r[quarter] = __pd_read_report(quarter)
+
+    if (len(r[quarter].query(q_str)) > 0):
+        bvps = r[quarter].query(q_str).bvps.values[0]
+    else:
+        log.warn('no entry in %s', quarter)
+        return False, False
+
+    s, e = __quarter_to_date(quarter)
+    k = ts.get_k_data(code, ktype='M', start=s, end=e)
+    if (len(k) == 0):
+        log.warn('no k data entry in %s', quarter)
+        return False, False
+    pps = k.loc[k.last_valid_index()].close
+    log.debug('%s, price: %.2f', e, pps)
+    log.debug('bvps: %.2f', bvps)
+    pb = round(pps/bvps, 2)
+    log.debug('pb: %.2f', pb)
+
+    return pb, bvps
+
+def __get_est_price_mode_pb(realtime, code, years):
+
+    q_str = 'code==' + '\"' + code + '\"'
+
+    pb_obj = {}
+    bvps = 0
+    for y in range(datetime.now().year - years, datetime.now().year + 1):
+        for q in range(1, 5):
+	    quarter = str(y)+'q'+str(q)
+	    if (os.path.exists(PREFIX+'/'+quarter+'.csv')):
+		r = __pd_read_report(quarter)
+		if (len(r.query(q_str)) > 0):
+		    # save all pb history and latest bvps
+                    tmp_pb, tmp_bvps = __get_pb_and_bvps(code, quarter)
+                    if (isinstance(tmp_pb, float) & isinstance(tmp_bvps, float)):
+                        pb_obj[quarter] = tmp_pb
+                        bvps = tmp_bvps
+                        log.debug('%s pb: %.2f, bvps: %.2f', quarter, pb_obj[quarter], bvps)
+                    else:
+                        log.warn('skip %s', quarter)
+                        continue
+    #sorted(pb_obj)
+    #log.debug(pb_obj)
+    arr = pb_obj.values()
+    mu, std = norm.fit(arr)
+
+    if (realtime):
+	d = datetime.now()
+	today = __pd_read_today_all()
+	close = round(today.query(q_str).trade.values[0], 2)
+    else:
+	k, d = __get_k_data_of_last_trade_day(code)
+	close = round(k.close.values[0], 2)
+    log.info('%s price: %.2f @ pb %.2f', d.strftime("%Y-%m-%d"), close, close/bvps)
+    log.info('mu, std: %.2f, %.2f', mu, std)
+
+    left = __estimation_formula_pb(bvps, mu - std)
+    centrum = __estimation_formula_pb(bvps, mu)
+    right = __estimation_formula_pb(bvps, mu + std)
+    value = __estimation_formula_pb(bvps, 1.0)
+
+    log.info('est dynamic: %.2f~%.2f~%.2f', left, centrum, right)
+    log.info('est value: %.2f', value)
+    log.info('range from left: %.2f%%', (close-left)/left*100.0)
+    log.info('position: %.2f%%', (close-left)/(right-left)*100.0)
+
+    return left, centrum, right, value
+
 def get_name_by_code(code):
     q_str = 'code==' + '\"' + code + '\"'
     # FIXME should use the latest report file
@@ -192,6 +277,8 @@ def get_est_price(realtime, mode, years, code):
     '''
     if (mode == 'pe'):
 	return __get_est_price_mode_pe(realtime, code, years)
+    elif (mode == 'pb'):
+	return __get_est_price_mode_pb(realtime, code, years)
     else:
 	return 0, 0, 0
 
@@ -275,4 +362,5 @@ def get_today_all():
     print "[%s] get_today_all" %(datetime.now().strftime("%H:%M:%S.%f"))
     df = ts.get_today_all()
     filename = PREFIX + '/' + 'today_all.csv'
+    os.remove(filename)
     return save_to_file(filename, df)

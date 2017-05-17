@@ -118,7 +118,7 @@ def get_report(opt, mode, year, quarter):
 
 @cli.command()
 @click.option('--realtime', is_flag = True)
-@click.option('--mode', default = 'pe', help = 'pe|ebit|ebitda')
+@click.option('--mode', default = 'pe', help = 'pe|pb|ebit|ebitda')
 @click.option('--years', default = 5, help = 'number of years')
 @click.argument('security', required = True)
 @pass_config
@@ -126,6 +126,7 @@ def eval(opt, realtime, mode, years, security):
     ''' Evaluate security price range according to different key indicators\n
     mode:\n
         pe: make use of Gaussian Distribution of P/E history\n
+        pb: make use of Gaussian Distribution of P/B history\n
         ebit: make use of EV/EBIT\n
         ebitda: make use of EV/EBITDA\n
     years:\n
