@@ -65,7 +65,7 @@ def __get_pe_and_eps(code, quarter):
         if (len(r[quarter].query(q_str)) > 0):
             np = r[quarter].query(q_str).net_profits.values[0]
         else:
-            log.warn('no entry in %s', quarter)
+            log.warn('no entry in %s (net_profits)', quarter)
             return False, False
     else:
 	last_q4 = str(int(y)-1)+'q4'
@@ -75,7 +75,12 @@ def __get_pe_and_eps(code, quarter):
         if ((len(r[quarter].query(q_str)) > 0) & (len(r[last_q4].query(q_str)) > 0) & (len(r[last_q].query(q_str)) > 0)):
             np = r[last_q4].query(q_str).net_profits.values[0] - r[last_q].query(q_str).net_profits.values[0] + r[quarter].query(q_str).net_profits.values[0]
         else:
-            log.warn('no entry in %s', quarter)
+            if (len(r[quarter].query(q_str)) <= 0):
+                log.warn('no entry in %s (net_profits)', quarter)
+            if (len(r[last_q4].query(q_str)) <= 0):
+                log.warn('no entry in %s (net_profits)', last_q4)
+            if (len(r[last_q].query(q_str)) <= 0):
+                log.warn('no entry in %s (net_profits)', last_q)
             return False, False
 
     eps = np/totals/10000.0
@@ -166,7 +171,7 @@ def __get_est_price_mode_pe(realtime, code, years):
     else:
 	k, d = __get_k_data_of_last_trade_day(code)
 	close = round(k.close.values[0], 2)
-    log.info('%s price: %.2f @ pe %.2f', d.strftime("%Y-%m-%d"), close, close/eps)
+    log.info('%s price: %.2f @ pe %.2f, eps %.2f', d.strftime("%Y-%m-%d"), close, close/eps, eps)
     log.info('mu, std: %.2f, %.2f', mu, std)
 
     growth = __get_growth(code, years)
@@ -198,7 +203,7 @@ def __get_pb_and_bvps(code, quarter):
     if (len(r[quarter].query(q_str)) > 0):
         bvps = r[quarter].query(q_str).bvps.values[0]
     else:
-        log.warn('no entry in %s', quarter)
+        log.warn('no entry in %s (bvps)', quarter)
         return False, False
 
     s, e = __quarter_to_date(quarter)
@@ -247,7 +252,7 @@ def __get_est_price_mode_pb(realtime, code, years):
     else:
 	k, d = __get_k_data_of_last_trade_day(code)
 	close = round(k.close.values[0], 2)
-    log.info('%s price: %.2f @ pb %.2f', d.strftime("%Y-%m-%d"), close, close/bvps)
+    log.info('%s price: %.2f @ pb %.2f, bvps %.2f', d.strftime("%Y-%m-%d"), close, close/bvps, bvps)
     log.info('mu, std: %.2f, %.2f', mu, std)
 
     left = __estimation_formula_pb(bvps, mu - std)
