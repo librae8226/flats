@@ -161,24 +161,28 @@ def eval(opt, realtime, mode, years, security):
     return None
 
 @cli.command()
-@click.argument('security', required = True)
+@click.option('--eval', default = False, is_flag = True)
+@click.argument('security', required = False)
 @pass_config
-def cashcow(opt, security):
+def cashcow(opt, eval, security):
     ''' Find the cash cow!\n
     operating cashflow / profit > 1.0 for a long time\n
     larger mean & smaller std\n
     '''
 
-    s_arr = security.split(',')
-    log.info('security(%d): %s', len(s_arr), security)
-    for s in s_arr:
-        name = worker.get_name_by_code(s)
-        if (name):
-            log.info('-------- %s(%s) --------', s, name)
-            worker.eval_cashcow(s)
-            log.info('----------------------------------')
-        else:
-            log.info('no history entry for %s', security)
+    if eval is True:
+        s_arr = security.split(',')
+        log.info('security(%d): %s', len(s_arr), security)
+        for s in s_arr:
+            name = worker.get_name_by_code(s)
+            if (name):
+                log.info('-------- %s(%s) --------', s, name)
+                worker.eval_cashcow(s)
+                log.info('----------------------------------')
+            else:
+                log.info('no history entry for %s', security)
+    else:
+        worker.find_cashcow()
 
     return None
 

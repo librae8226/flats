@@ -384,3 +384,38 @@ def eval_cashcow(s):
     log.info(cf_nm_arr)
     log.info('mean: %f', numpy.mean(cf_nm_arr))
     log.info('std: %f', numpy.std(cf_nm_arr))
+
+def find_cashcow():
+    securities = []
+    cows = []
+    cf_nm_arr_of_sec = {}
+    mean_of_sec = {}
+    std_of_sec = {}
+    for y in range(datetime.now().year - 1, datetime.now().year - 10, -1):
+        cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
+        if len(securities) is 0:
+            #securities = cf.code.head(5).values.tolist()
+            securities = cf.code.head(5).values.tolist()
+        for s in securities:
+            #log.info(s)
+            q_str = 'code==' + str(s)
+            res = cf.query(q_str)
+            if len(res) is 0:
+                continue
+            else:
+                try:
+                    cf_nm_arr_of_sec[str(s)].insert(0, res.cf_nm.values[0])
+                except Exception:
+                    cf_nm_arr_of_sec[str(s)] = {}
+    #log.info(cf_nm_arr_of_sec)
+    log.info('mean: %f', numpy.mean(cf_nm_arr_of)sec)))
+    log.info('std: %f', numpy.std(cf_nm_arr))
+
+    #mean_of_sec[str(s)] = numpy.mean(cf_nm_arr_of_sec[str(s)])
+    #std_of_sec[str(s)] = numpy.std(cf_nm_arr_of_sec[str(s)])
+    '''
+    for s in securities:
+        if mean_of_sec[str(s)] > 1 and std_of_sec[str(s)] < 0.6:
+            cows.append(s)
+            log.info(get_name_by_code(s) + '(%08d) %s, mean %f, std %f', s, cf_nm_arr_of_sec[str(s)], mean_of_sec[str(s)], std_of_sec[str(s)])
+    '''
