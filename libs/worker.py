@@ -369,3 +369,18 @@ def get_today_all():
     filename = PREFIX + '/' + 'today_all.csv'
     os.remove(filename)
     return save_to_file(filename, df)
+
+def eval_cashcow(s):
+    cf_nm_arr = []
+    for y in range(datetime.now().year - 1, datetime.now().year - 10, -1):
+        cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
+        q_str = 'code==' + '\"' + s + '\"'
+        res = cf.query(q_str)
+        if len(res) is 0:
+            log.info('till ' + str(datetime.now().year - 1) + ' since ' + str(y))
+            break
+        else:
+            cf_nm_arr.insert(0, res.cf_nm.values[0])
+    log.info(cf_nm_arr)
+    log.info('mean: %f', numpy.mean(cf_nm_arr))
+    log.info('std: %f', numpy.std(cf_nm_arr))
