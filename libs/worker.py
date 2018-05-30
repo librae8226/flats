@@ -5,7 +5,7 @@ from datetime import datetime
 from datetime import timedelta
 from log import log
 from scipy.stats import norm
-import numpy
+import numpy as np
 import math
 
 PREFIX = 'data'
@@ -114,7 +114,7 @@ def __get_growth(code, years):
 		    g.append(tmp_g)
 		    log.debug('growth@%s: %.2f%%', quarter, tmp_g)
 		    break
-    growth = round(numpy.mean(g)/100.0, 2)
+    growth = round(np.mean(g)/100.0, 2)
     log.info('growth: %.2f %d~%d %s', growth, datetime.now().year - years, datetime.now().year, str(g))
     return growth
 
@@ -384,10 +384,10 @@ def eval_cashcow(s):
             cf_nm_arr.insert(0, res.cf_nm.values[0])
             years.insert(0, y)
     log.info(cf_nm_arr)
-    log.info('mean: %f', numpy.mean(cf_nm_arr))
-    log.info('std: %f', numpy.std(cf_nm_arr))
-    z = numpy.polyfit(years, cf_nm_arr, 1)
-    p = numpy.poly1d(z)
+    log.info('mean: %f', np.mean(cf_nm_arr))
+    log.info('std: %f', np.std(cf_nm_arr))
+    z = np.polyfit(years, cf_nm_arr, 1)
+    p = np.poly1d(z)
     log.info('fit: %s', str(p).split('\n')[1])
     # p[1]*x + p[0]
     return years, cf_nm_arr
@@ -399,7 +399,10 @@ def find_cashcow():
     mean_of_sec = {}
     std_of_sec = {}
     for y in range(datetime.now().year - 1, datetime.now().year - 20, -1):
-        cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
+        try:
+            cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
+        except Exception as e:
+            break
         if len(securities) is 0:
             #securities = cf.code.head(5).values.tolist()
             securities = cf.code.head(5).values.tolist()
@@ -417,11 +420,11 @@ def find_cashcow():
     for s in securities:
         log.info('%06d', s)
         log.info(cf_nm_arr_of_sec[str(s)])
-        log.info('mean: %f', numpy.mean(cf_nm_arr_of_sec[str(s)]))
-        log.info('std: %f', numpy.std(cf_nm_arr_of_sec[str(s)]))
+        log.info('mean: %f', np.mean(cf_nm_arr_of_sec[str(s)]))
+        log.info('std: %f', np.std(cf_nm_arr_of_sec[str(s)]))
 
-    #mean_of_sec[str(s)] = numpy.mean(cf_nm_arr_of_sec[str(s)])
-    #std_of_sec[str(s)] = numpy.std(cf_nm_arr_of_sec[str(s)])
+    #mean_of_sec[str(s)] = np.mean(cf_nm_arr_of_sec[str(s)])
+    #std_of_sec[str(s)] = np.std(cf_nm_arr_of_sec[str(s)])
     '''
     for s in securities:
         if mean_of_sec[str(s)] > 1 and std_of_sec[str(s)] < 0.6:

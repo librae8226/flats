@@ -180,7 +180,7 @@ def cashcow(opt, eval, security):
                 worker.eval_cashcow(s)
                 log.info('----------------------------------')
             else:
-                log.info('no history entry for %s', security)
+                log.info('no history entry for %s', s)
     else:
         worker.find_cashcow()
 
