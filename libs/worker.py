@@ -372,6 +372,7 @@ def get_today_all():
 
 def eval_cashcow(s):
     cf_nm_arr = []
+    years = []
     for y in range(datetime.now().year - 1, datetime.now().year - 10, -1):
         cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
         q_str = 'code==' + '\"' + s + '\"'
@@ -381,9 +382,15 @@ def eval_cashcow(s):
             break
         else:
             cf_nm_arr.insert(0, res.cf_nm.values[0])
+            years.insert(0, y)
     log.info(cf_nm_arr)
     log.info('mean: %f', numpy.mean(cf_nm_arr))
     log.info('std: %f', numpy.std(cf_nm_arr))
+    z = numpy.polyfit(years, cf_nm_arr, 1)
+    p = numpy.poly1d(z)
+    log.info('fit: %s', str(p).split('\n')[1])
+    # p[1]*x + p[0]
+    return years, cf_nm_arr
 
 def find_cashcow():
     securities = []
@@ -391,7 +398,7 @@ def find_cashcow():
     cf_nm_arr_of_sec = {}
     mean_of_sec = {}
     std_of_sec = {}
-    for y in range(datetime.now().year - 1, datetime.now().year - 10, -1):
+    for y in range(datetime.now().year - 1, datetime.now().year - 20, -1):
         cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
         if len(securities) is 0:
             #securities = cf.code.head(5).values.tolist()
@@ -405,11 +412,13 @@ def find_cashcow():
             else:
                 try:
                     cf_nm_arr_of_sec[str(s)].insert(0, res.cf_nm.values[0])
-                except Exception:
-                    cf_nm_arr_of_sec[str(s)] = {}
-    #log.info(cf_nm_arr_of_sec)
-    log.info('mean: %f', numpy.mean(cf_nm_arr_of)sec)))
-    log.info('std: %f', numpy.std(cf_nm_arr))
+                except Exception as e:
+                    cf_nm_arr_of_sec[str(s)] = []
+    for s in securities:
+        log.info('%06d', s)
+        log.info(cf_nm_arr_of_sec[str(s)])
+        log.info('mean: %f', numpy.mean(cf_nm_arr_of_sec[str(s)]))
+        log.info('std: %f', numpy.std(cf_nm_arr_of_sec[str(s)]))
 
     #mean_of_sec[str(s)] = numpy.mean(cf_nm_arr_of_sec[str(s)])
     #std_of_sec[str(s)] = numpy.std(cf_nm_arr_of_sec[str(s)])
