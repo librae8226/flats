@@ -405,7 +405,7 @@ def find_cashcow():
             break
         if len(securities) is 0:
             #securities = cf.code.head(5).values.tolist()
-            securities = cf.code.head(5).values.tolist()
+            securities = cf.code.values.tolist()
         for s in securities:
             #log.info(s)
             q_str = 'code==' + str(s)
@@ -418,10 +418,22 @@ def find_cashcow():
                 except Exception as e:
                     cf_nm_arr_of_sec[str(s)] = []
     for s in securities:
-        log.info('%06d', s)
-        log.info(cf_nm_arr_of_sec[str(s)])
-        log.info('mean: %f', np.mean(cf_nm_arr_of_sec[str(s)]))
-        log.info('std: %f', np.std(cf_nm_arr_of_sec[str(s)]))
+        cow = {}
+        #log.info('%06d', s)
+        c = cf_nm_arr_of_sec[str(s)]
+        #log.info(c)
+        #log.info('mean: %f', np.mean(c))
+        #log.info('std: %f', np.std(c))
+        if len(c) == 0:
+            continue
+        mean = np.mean(c)
+        std = np.std(c)
+        if mean > 1.2 and std < 0.4 and std > 0:
+            cow['code'] = s
+            cow['mean'] = round(mean, 3)
+            cow['std'] = round(std, 3)
+            cows.append(cow)
+    log.info(cows)
 
     #mean_of_sec[str(s)] = np.mean(cf_nm_arr_of_sec[str(s)])
     #std_of_sec[str(s)] = np.std(cf_nm_arr_of_sec[str(s)])
