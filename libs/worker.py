@@ -7,6 +7,7 @@ from log import log
 from scipy.stats import norm
 import numpy as np
 import math
+import json
 
 PREFIX = 'data'
 
@@ -441,10 +442,12 @@ def find_cashcow():
         mean = np.mean(c)
         std = np.std(c)
         if mean > 1.2 and std < 0.4 and std > 0:
-            cow['code'] = s
+            cow['name'] = get_name_by_code(str(s).zfill(6))
+            cow['code'] = str(s).zfill(6)
             cow['mean'] = round(mean, 3)
             cow['std'] = round(std, 3)
             cows.append(cow)
+    cows = json.dumps(cows, ensure_ascii = False, sort_keys = True, indent = 4)
     log.info(cows)
     return cows
 
