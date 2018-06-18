@@ -166,7 +166,8 @@ def eval(opt, realtime, mode, years, security):
 @pass_config
 def cashcow(opt, eval, security):
     ''' Find the cash cow!\n
-    operating cashflow / profit > 1.0 for a long time\n
+    cf_nm = operating cashflow / profit > 2.0 for years\n
+    cashflowratio = operating cashflow / current liabilities > 15% for years\n
     larger mean & smaller std\n
     '''
 

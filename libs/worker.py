@@ -372,6 +372,7 @@ def get_today_all():
 
 def eval_cashcow(s):
     cf_nm_arr = []
+    cashflowratio_arr = []
     years = []
     for y in range(datetime.now().year - 1, datetime.now().year - 10, -1):
         cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
@@ -382,15 +383,25 @@ def eval_cashcow(s):
             break
         else:
             cf_nm_arr.insert(0, res.cf_nm.values[0])
+            cashflowratio_arr.insert(0, res.cashflowratio.values[0])
             years.insert(0, y)
+    log.info('cf_nm:')
     log.info(cf_nm_arr)
     log.info('mean: %f', np.mean(cf_nm_arr))
     log.info('std: %f', np.std(cf_nm_arr))
     z = np.polyfit(years, cf_nm_arr, 1)
     p = np.poly1d(z)
-    log.info('fit: %s', str(p).split('\n')[1])
     # p[1]*x + p[0]
-    return years, cf_nm_arr
+    log.info('fit: %s', str(p).split('\n')[1])
+    log.info('cashflowratio:')
+    log.info(cashflowratio_arr)
+    log.info('mean: %f', np.mean(cashflowratio_arr))
+    log.info('std: %f', np.std(cashflowratio_arr))
+    z = np.polyfit(years, cashflowratio_arr, 1)
+    p = np.poly1d(z)
+    # p[1]*x + p[0]
+    log.info('fit: %s', str(p).split('\n')[1])
+    return years, cf_nm_arr, cashflowratio_arr
 
 def find_cashcow():
     securities = []
