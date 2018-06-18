@@ -409,6 +409,7 @@ def find_cashcow():
     cf_nm_arr_of_sec = {}
     mean_of_sec = {}
     std_of_sec = {}
+    log.info('start filtering...')
     for y in range(datetime.now().year - 1, datetime.now().year - 20, -1):
         try:
             cf = pd.read_csv(PREFIX + '/' + str(y) + 'q4.cashflow.csv')
@@ -445,6 +446,7 @@ def find_cashcow():
             cow['std'] = round(std, 3)
             cows.append(cow)
     log.info(cows)
+    return cows
 
     #mean_of_sec[str(s)] = np.mean(cf_nm_arr_of_sec[str(s)])
     #std_of_sec[str(s)] = np.std(cf_nm_arr_of_sec[str(s)])
